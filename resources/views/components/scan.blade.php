@@ -32,6 +32,20 @@ new class extends Component
     /** Barcode yang terbaca tapi belum terdaftar di master produk. */
     public ?string $unknownBarcode = null;
 
+    public function mount(): void
+    {
+        $barcode = request()->string('barcode')->trim()->toString();
+        $type = request()->string('type')->toString();
+
+        if (in_array($type, [StockMovement::TYPE_IN, StockMovement::TYPE_OUT, StockMovement::TYPE_ADJUST], true)) {
+            $this->type = $type;
+        }
+
+        if ($barcode !== '') {
+            $this->resolveBarcode($barcode);
+        }
+    }
+
     #[Computed]
     public function product(): ?Product
     {
@@ -112,7 +126,7 @@ new class extends Component
         $this->reset('error', 'success', 'unknownBarcode');
 
         $barcode = trim($data);
-        $product = Product::where('barcode', $barcode)->first();
+        $product = Product::with('location')->where('barcode', $barcode)->first();
 
         if (! $product) {
             $this->productId = null;
@@ -221,9 +235,11 @@ new class extends Component
         <div class="rounded-xl bg-white p-4 shadow-sm">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="truncate font-semibold text-slate-900">{{ $product->name }}</p>
+                    <a href="{{ route('products.show', $product) }}" class="block truncate font-semibold text-slate-900 underline decoration-slate-300 underline-offset-2">
+                        {{ $product->name }}
+                    </a>
                     <p class="font-mono text-xs text-slate-500">{{ $product->barcode }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Lokasi {{ $product->location ?? '-' }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Lokasi {{ $product->location?->code ?? '-' }}</p>
                 </div>
                 <div class="shrink-0 text-right">
                     <p class="text-2xl font-bold tabular-nums {{ $product->isLowStock() ? 'text-red-600' : 'text-slate-900' }}">

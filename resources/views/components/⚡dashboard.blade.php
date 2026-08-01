@@ -2,6 +2,7 @@
 
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\Location;
 use Livewire\Component;
 
 new class extends Component
@@ -23,6 +24,7 @@ new class extends Component
                 ->count(),
             'todayMovements' => StockMovement::query()->whereDate('created_at', today())->count(),
             'restockProducts' => (clone $activeProducts)
+                ->with('location:id,code')
                 ->where('min_stock', '>', 0)
                 ->whereColumn('stock', '<=', 'min_stock')
                 ->orderByRaw('(min_stock - stock) DESC')
@@ -32,6 +34,13 @@ new class extends Component
             'recentMovements' => StockMovement::query()
                 ->with('product:id,name')
                 ->latest('id')
+                ->limit(5)
+                ->get(),
+            'locationSummaries' => Location::query()
+                ->whereNull('archived_at')
+                ->withCount(['products as active_products_count' => fn ($query) => $query->whereNull('archived_at')])
+                ->orderByDesc('active_products_count')
+                ->orderBy('code')
                 ->limit(5)
                 ->get(),
         ];
@@ -71,21 +80,41 @@ new class extends Component
 
     <section class="space-y-2">
         <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-900">Lokasi Gudang</h2>
+            <a href="{{ route('locations') }}" class="text-xs font-medium text-slate-500">Kelola lokasi</a>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+            @forelse ($locationSummaries as $location)
+                <div wire:key="dashboard-location-{{ $location->id }}" class="rounded-xl bg-white p-3 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-900">{{ $location->code }}</p>
+                    <p class="truncate text-xs text-slate-500">{{ $location->name }}</p>
+                    <p class="mt-1 text-xs font-medium text-slate-600">{{ $location->active_products_count }} produk</p>
+                </div>
+            @empty
+                <p class="col-span-2 rounded-xl bg-white p-4 text-center text-sm text-slate-500">Belum ada lokasi.</p>
+            @endforelse
+        </div>
+    </section>
+
+    <section class="space-y-2">
+        <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-slate-900">Prioritas Restock</h2>
             <a href="{{ route('products', ['lowOnly' => true]) }}" class="text-xs font-medium text-slate-500">Lihat semua</a>
         </div>
 
         @forelse ($restockProducts as $product)
-            <div wire:key="restock-{{ $product->id }}" class="flex items-center justify-between gap-3 rounded-xl bg-white p-3 shadow-sm">
+            <a href="{{ route('products.show', $product) }}" wire:key="restock-{{ $product->id }}"
+               class="flex items-center justify-between gap-3 rounded-xl bg-white p-3 shadow-sm active:bg-slate-50">
                 <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-slate-900">{{ $product->name }}</p>
-                    <p class="text-xs text-slate-500">{{ $product->location ?? 'Tanpa lokasi' }} &middot; minimum {{ $product->min_stock }} {{ $product->unit }}</p>
+                    <p class="text-xs text-slate-500">{{ $product->location?->code ?? 'Tanpa lokasi' }} &middot; minimum {{ $product->min_stock }} {{ $product->unit }}</p>
                 </div>
                 <div class="shrink-0 text-right">
                     <p class="text-lg font-bold tabular-nums text-red-600">{{ $product->stock }}</p>
                     <p class="text-xs text-slate-500">{{ $product->unit }}</p>
                 </div>
-            </div>
+            </a>
         @empty
             <p class="rounded-xl bg-emerald-50 p-4 text-center text-sm text-emerald-700">Semua stok berada di atas batas minimum.</p>
         @endforelse

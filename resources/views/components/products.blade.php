@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Product;
+use App\Models\Location;
 use App\Models\StockMovement;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -32,13 +33,25 @@ new class extends Component
 
     public string $unit = 'pcs';
 
-    public string $location = '';
+    public ?int $locationId = null;
+
+    #[Url(except: '')]
+    public string $locationFilter = '';
 
     public int $stock = 0;
 
     public int $minStock = 0;
 
     public ?string $success = null;
+
+    public function mount(): void
+    {
+        $productId = request()->integer('edit');
+
+        if ($productId > 0) {
+            $this->editProduct($productId);
+        }
+    }
 
     public function updatedSearch(): void
     {
@@ -72,7 +85,7 @@ new class extends Component
         $this->barcode = $product->barcode;
         $this->name = $product->name;
         $this->unit = $product->unit;
-        $this->location = $product->location ?? '';
+        $this->locationId = $product->location_id;
         $this->stock = $product->stock;
         $this->minStock = $product->min_stock;
         $this->showForm = true;
@@ -83,7 +96,6 @@ new class extends Component
         $this->barcode = trim($this->barcode);
         $this->name = trim($this->name);
         $this->unit = trim($this->unit);
-        $this->location = trim($this->location);
 
         $validated = $this->validate([
             'barcode' => [
@@ -94,19 +106,26 @@ new class extends Component
             ],
             'name' => ['required', 'string', 'max:255'],
             'unit' => ['required', 'string', 'max:16'],
-            'location' => ['nullable', 'string', 'max:32'],
+            'locationId' => ['nullable', 'integer', Rule::exists('locations', 'id')->whereNull('archived_at')],
             'stock' => [Rule::requiredIf($this->editingProductId === null), 'integer', 'min:0', 'max:1000000'],
             'minStock' => ['required', 'integer', 'min:0', 'max:1000000'],
         ], attributes: [
             'barcode' => 'barcode',
             'name' => 'nama produk',
             'unit' => 'satuan',
-            'location' => 'lokasi',
+            'locationId' => 'lokasi',
             'stock' => 'stok awal',
             'minStock' => 'batas stok menipis',
         ]);
 
         $saved = DB::transaction(function () use ($validated, $stockService): bool {
+            if ($validated['locationId'] !== null) {
+                Location::query()
+                    ->whereNull('archived_at')
+                    ->lockForUpdate()
+                    ->findOrFail($validated['locationId']);
+            }
+
             $product = $this->editingProductId === null
                 ? new Product
                 : Product::lockForUpdate()->findOrFail($this->editingProductId);
@@ -121,7 +140,7 @@ new class extends Component
                 'barcode' => $validated['barcode'],
                 'name' => $validated['name'],
                 'unit' => $validated['unit'],
-                'location' => filled($validated['location']) ? $validated['location'] : null,
+                'location_id' => $validated['locationId'],
                 'min_stock' => $validated['minStock'],
             ]);
             $product->save();
@@ -197,7 +216,7 @@ new class extends Component
     protected function resetProductForm(): void
     {
         $this->resetValidation();
-        $this->reset('showForm', 'editingProductId', 'barcode', 'name', 'location', 'stock', 'minStock', 'success');
+        $this->reset('showForm', 'editingProductId', 'barcode', 'name', 'locationId', 'stock', 'minStock', 'success');
         $this->unit = 'pcs';
     }
 
@@ -205,7 +224,9 @@ new class extends Component
     {
         return [
             'products' => Product::query()
+                ->with('location:id,code')
                 ->when($this->showArchived, fn ($query) => $query->whereNotNull('archived_at'), fn ($query) => $query->whereNull('archived_at'))
+                ->when($this->locationFilter !== '', fn ($query) => $query->where('location_id', $this->locationFilter))
                 ->when($this->search !== '', function ($query) {
                     $term = '%'.$this->search.'%';
                     $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('barcode', 'like', $term));
@@ -213,6 +234,7 @@ new class extends Component
                 ->when($this->lowOnly, fn ($q) => $q->whereColumn('stock', '<=', 'min_stock')->where('min_stock', '>', 0))
                 ->orderBy('name')
                 ->paginate(20),
+            'locations' => Location::query()->whereNull('archived_at')->orderBy('code')->get(['id', 'code', 'name']),
         ];
     }
 };
@@ -263,9 +285,13 @@ new class extends Component
 
                 <label class="block">
                     <span class="text-xs font-medium text-slate-600">Lokasi</span>
-                    <input type="text" wire:model="location" autocomplete="off"
-                           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none">
-                    @error('location') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
+                    <select wire:model="locationId" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none">
+                        <option value="">Tanpa lokasi</option>
+                        @foreach ($locations as $location)
+                            <option wire:key="location-option-{{ $location->id }}" value="{{ $location->id }}">{{ $location->code }} — {{ $location->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('locationId') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
                 </label>
             </div>
 
@@ -323,18 +349,22 @@ new class extends Component
         </label>
     </div>
 
+    <select wire:model.live="locationFilter" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none">
+        <option value="">Semua lokasi</option>
+        @foreach ($locations as $location)
+            <option wire:key="location-filter-{{ $location->id }}" value="{{ $location->id }}">{{ $location->code }} — {{ $location->name }}</option>
+        @endforeach
+    </select>
+
     <div class="space-y-2">
         @forelse ($products as $product)
             <div wire:key="product-{{ $product->id }}" class="flex items-center gap-2 rounded-xl bg-white p-3 shadow-sm">
-                @if ($product->isArchived())
-                    <div class="flex min-w-0 flex-1 items-center justify-between gap-3 opacity-60">
-                @else
-                    <button type="button" wire:click="editProduct({{ $product->id }})" class="flex min-w-0 flex-1 items-center justify-between gap-3 text-left active:opacity-70">
-                @endif
+                <a href="{{ route('products.show', $product) }}"
+                   class="flex min-w-0 flex-1 items-center justify-between gap-3 text-left active:opacity-70 {{ $product->isArchived() ? 'opacity-60' : '' }}">
                     <div class="min-w-0">
                         <p class="truncate text-sm font-medium text-slate-900">{{ $product->name }}</p>
                         <p class="font-mono text-xs text-slate-500">{{ $product->barcode }}</p>
-                        <p class="text-xs text-slate-400">Lokasi {{ $product->location ?? '-' }} &middot; min {{ $product->min_stock }}</p>
+                        <p class="text-xs text-slate-400">Lokasi {{ $product->location?->code ?? '-' }} &middot; min {{ $product->min_stock }}</p>
                     </div>
                     <div class="shrink-0 text-right">
                         <p class="text-xl font-bold tabular-nums {{ $product->isLowStock() ? 'text-red-600' : 'text-slate-900' }}">
@@ -342,11 +372,7 @@ new class extends Component
                         </p>
                         <p class="text-xs text-slate-500">{{ $product->unit }}</p>
                     </div>
-                @if ($product->isArchived())
-                    </div>
-                @else
-                    </button>
-                @endif
+                </a>
                 @if ($product->isArchived())
                     <button type="button" wire:click="restoreProduct({{ $product->id }})"
                             class="shrink-0 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 active:bg-emerald-100">
