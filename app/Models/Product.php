@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
     protected $fillable = [
-        'barcode', 'name', 'unit', 'location', 'stock', 'min_stock',
+        'barcode', 'name', 'unit', 'location_id', 'stock', 'min_stock',
     ];
 
     protected $casts = [
@@ -20,6 +21,11 @@ class Product extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function isLowStock(): bool

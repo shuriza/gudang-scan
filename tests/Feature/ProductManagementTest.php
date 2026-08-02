@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Exceptions\StockException;
+use App\Models\Location;
 use App\Models\Product;
 use App\Models\StockMovement;
 use App\Services\StockService;
@@ -16,12 +17,14 @@ class ProductManagementTest extends TestCase
 
     public function test_product_can_be_created_from_product_page(): void
     {
+        $location = Location::create(['code' => 'D-01', 'name' => 'Rak D-01']);
+
         Livewire::test('products')
             ->call('createProduct')
             ->set('barcode', ' 8999999999999 ')
             ->set('name', ' Produk Baru ')
             ->set('unit', ' dus ')
-            ->set('location', ' D-01 ')
+            ->set('locationId', $location->id)
             ->set('stock', 12)
             ->set('minStock', 4)
             ->call('saveProduct')
@@ -32,7 +35,7 @@ class ProductManagementTest extends TestCase
             'barcode' => '8999999999999',
             'name' => 'Produk Baru',
             'unit' => 'dus',
-            'location' => 'D-01',
+            'location_id' => $location->id,
             'stock' => 12,
             'min_stock' => 4,
         ]);
@@ -70,11 +73,12 @@ class ProductManagementTest extends TestCase
 
     public function test_product_details_can_be_edited_without_bypassing_stock_history(): void
     {
+        $location = Location::create(['code' => 'A-01', 'name' => 'Rak A-01']);
         $product = Product::create([
             'barcode' => '8999999999999',
             'name' => 'Produk Lama',
             'unit' => 'pcs',
-            'location' => 'A-01',
+            'location_id' => $location->id,
             'stock' => 25,
             'min_stock' => 5,
         ]);
@@ -84,7 +88,7 @@ class ProductManagementTest extends TestCase
             ->set('barcode', '8999999999998')
             ->set('name', 'Produk Diperbarui')
             ->set('unit', 'karton')
-            ->set('location', '')
+            ->set('locationId', null)
             ->set('stock', 999)
             ->set('minStock', 8)
             ->call('saveProduct')
@@ -96,7 +100,7 @@ class ProductManagementTest extends TestCase
         $this->assertSame('8999999999998', $product->barcode);
         $this->assertSame('Produk Diperbarui', $product->name);
         $this->assertSame('karton', $product->unit);
-        $this->assertNull($product->location);
+        $this->assertNull($product->location_id);
         $this->assertSame(25, $product->stock);
         $this->assertSame(8, $product->min_stock);
         $this->assertSame(0, StockMovement::count());

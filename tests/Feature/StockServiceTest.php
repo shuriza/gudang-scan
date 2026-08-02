@@ -19,7 +19,7 @@ class StockServiceTest extends TestCase
             'barcode' => '8992696404021',
             'name' => 'Kopi Kapal Api 165g',
             'unit' => 'pcs',
-            'location' => 'B-01',
+
             'stock' => $stock,
             'min_stock' => 30,
         ]);

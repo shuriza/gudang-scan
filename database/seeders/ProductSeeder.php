@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Location;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
 
@@ -19,7 +20,18 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::updateOrCreate(['barcode' => $product['barcode']], $product);
+            $locationCode = $product['location'];
+            unset($product['location']);
+
+            $location = Location::firstOrCreate(
+                ['code' => $locationCode],
+                ['name' => "Rak {$locationCode}"],
+            );
+
+            Product::updateOrCreate(
+                ['barcode' => $product['barcode']],
+                [...$product, 'location_id' => $location->id],
+            );
         }
     }
 }
