@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StockMovement extends Model
 {
     public const TYPE_IN = 'in';
+
     public const TYPE_OUT = 'out';
+
     public const TYPE_ADJUST = 'adjust';
 
     protected $fillable = [
-        'product_id', 'type', 'quantity', 'stock_before', 'stock_after', 'note',
+        'product_id', 'inventory_document_id', 'inventory_document_item_id', 'type', 'quantity', 'stock_before', 'stock_after', 'note',
     ];
 
     protected $casts = [
