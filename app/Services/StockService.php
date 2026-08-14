@@ -69,6 +69,8 @@ class StockService
 
             $product->setRawAttributes($locked->getAttributes(), true);
 
+            app(StockAlertService::class)->sync($locked);
+
             return $movement;
         });
     }
