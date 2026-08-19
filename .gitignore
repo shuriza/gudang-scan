@@ -34,3 +34,6 @@ Thumbs.db
 
 # CDP browser profile (dev tooling)
 /storage/app/cdp-profile
+
+# SQLite backups generated from Settings
+/storage/app/backups
