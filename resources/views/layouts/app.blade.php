@@ -22,7 +22,7 @@
                 {{ $slot }}
             </main>
 
-            <nav class="sticky bottom-0 z-10 grid grid-cols-4 border-t border-slate-200 bg-white text-center text-xs"
+            <nav class="sticky bottom-0 z-10 overflow-x-auto border-t border-slate-200 bg-white text-center text-xs"
                  style="padding-bottom: env(safe-area-inset-bottom)">
                 @php
                     $tabs = [
@@ -30,18 +30,26 @@
                         ['route' => 'scan', 'label' => 'Scan'],
                         ['route' => 'products', 'label' => 'Produk'],
                         ['route' => 'history', 'label' => 'Riwayat'],
+                        ['route' => 'locations', 'label' => 'Lokasi'],
+                        ['route' => 'documents', 'label' => 'Dokumen'],
+                        ['route' => 'opnames', 'label' => 'Opname'],
+                        ['route' => 'reports', 'label' => 'Laporan'],
+                        ['route' => 'alerts', 'label' => 'Alert'],
+                        ['route' => 'settings', 'label' => 'Setelan'],
                     ];
                 @endphp
+            <div class="flex min-w-max">
                 @foreach ($tabs as $tab)
                     <a href="{{ route($tab['route']) }}"
                        @class([
-                           'py-3 font-medium transition',
+                           'min-w-[4.5rem] py-3 font-medium transition',
                            'text-slate-900' => request()->routeIs($tab['route']),
                            'text-slate-400' => ! request()->routeIs($tab['route']),
                        ])>
                         {{ $tab['label'] }}
                     </a>
                 @endforeach
+            </div>
             </nav>
         </div>
 

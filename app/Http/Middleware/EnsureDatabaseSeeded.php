@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Product;
 use Closure;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -26,7 +27,7 @@ class EnsureDatabaseSeeded
 
             try {
                 if (Product::count() === 0) {
-                    (new \Database\Seeders\ProductSeeder)->run();
+                    (new DatabaseSeeder)->run();
                 }
             } catch (\Throwable) {
                 // Tabel belum ada atau error lain — jangan crash request.
