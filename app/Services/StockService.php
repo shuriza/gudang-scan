@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\StockException;
 use App\Models\Product;
 use App\Models\StockMovement;
-use App\Exceptions\StockException;
 use Illuminate\Support\Facades\DB;
 
 class StockService
@@ -38,6 +38,10 @@ class StockService
 
         return DB::transaction(function () use ($product, $type, $quantity, $note) {
             $locked = Product::lockForUpdate()->findOrFail($product->getKey());
+
+            if ($locked->isArchived()) {
+                throw new StockException("Produk {$locked->name} sudah diarsipkan dan tidak dapat dimutasi.");
+            }
 
             $before = $locked->stock;
 

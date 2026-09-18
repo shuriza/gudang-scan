@@ -14,6 +14,7 @@ class Product extends Model
     protected $casts = [
         'stock' => 'integer',
         'min_stock' => 'integer',
+        'archived_at' => 'datetime',
     ];
 
     public function movements(): HasMany
@@ -24,5 +25,10 @@ class Product extends Model
     public function isLowStock(): bool
     {
         return $this->min_stock > 0 && $this->stock <= $this->min_stock;
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
     }
 }

@@ -122,6 +122,14 @@ new class extends Component
             return;
         }
 
+        if ($product->isArchived()) {
+            $this->productId = null;
+            $this->barcode = $barcode;
+            $this->error = "Produk {$product->name} sedang diarsipkan. Aktifkan kembali dari menu Produk.";
+
+            return;
+        }
+
         $this->productId = $product->id;
         $this->barcode = $product->barcode;
         $this->quantity = 1;

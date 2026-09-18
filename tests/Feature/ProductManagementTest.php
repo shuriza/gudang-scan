@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\StockException;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\StockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -98,5 +100,63 @@ class ProductManagementTest extends TestCase
         $this->assertSame(25, $product->stock);
         $this->assertSame(8, $product->min_stock);
         $this->assertSame(0, StockMovement::count());
+    }
+
+    public function test_product_with_stock_cannot_be_archived(): void
+    {
+        $product = Product::create([
+            'barcode' => '8999999999999',
+            'name' => 'Produk Aktif',
+            'unit' => 'pcs',
+            'stock' => 5,
+            'min_stock' => 1,
+        ]);
+
+        Livewire::test('products')
+            ->call('editProduct', $product->id)
+            ->call('archiveProduct')
+            ->assertHasErrors(['archive']);
+
+        $this->assertNull($product->fresh()->archived_at);
+    }
+
+    public function test_zero_stock_product_can_be_archived_and_restored(): void
+    {
+        $product = Product::create([
+            'barcode' => '8999999999999',
+            'name' => 'Produk Kosong',
+            'unit' => 'pcs',
+            'stock' => 0,
+            'min_stock' => 1,
+        ]);
+
+        Livewire::test('products')
+            ->call('editProduct', $product->id)
+            ->call('archiveProduct')
+            ->assertSet('showForm', false)
+            ->assertSee('Produk berhasil diarsipkan.')
+            ->set('showArchived', true)
+            ->assertSee('Produk Kosong')
+            ->call('restoreProduct', $product->id)
+            ->assertSee('Produk berhasil diaktifkan kembali.');
+
+        $this->assertNull($product->fresh()->archived_at);
+    }
+
+    public function test_archived_product_cannot_receive_stock_movements(): void
+    {
+        $product = Product::create([
+            'barcode' => '8999999999999',
+            'name' => 'Produk Arsip',
+            'unit' => 'pcs',
+            'stock' => 0,
+            'min_stock' => 1,
+        ]);
+        $product->forceFill(['archived_at' => now()])->save();
+
+        $this->expectException(StockException::class);
+        $this->expectExceptionMessage('sudah diarsipkan');
+
+        app(StockService::class)->apply($product, StockMovement::TYPE_IN, 1);
     }
 }
