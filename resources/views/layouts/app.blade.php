@@ -22,10 +22,11 @@
                 {{ $slot }}
             </main>
 
-            <nav class="sticky bottom-0 z-10 grid grid-cols-3 border-t border-slate-200 bg-white text-center text-xs"
+            <nav class="sticky bottom-0 z-10 grid grid-cols-4 border-t border-slate-200 bg-white text-center text-xs"
                  style="padding-bottom: env(safe-area-inset-bottom)">
                 @php
                     $tabs = [
+                        ['route' => 'dashboard', 'label' => 'Ringkas'],
                         ['route' => 'scan', 'label' => 'Scan'],
                         ['route' => 'products', 'label' => 'Produk'],
                         ['route' => 'history', 'label' => 'Riwayat'],
