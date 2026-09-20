@@ -1,58 +1,65 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Gudang Scan
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi inventaris gudang berbasis barcode untuk web dan Android. Gudang Scan dibangun dengan Laravel, Livewire, dan NativePHP Mobile agar operator dapat mencatat mutasi stok, mengelola dokumen inventaris, melakukan stock opname, dan memantau stok menipis dari satu aplikasi.
 
-## About Laravel
+## Fitur Utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Dashboard ringkas untuk stok menipis, mutasi hari ini, dan lokasi penyimpanan.
+- Pemindaian barcode untuk mutasi stok satuan.
+- Pengelolaan produk, lokasi, pemasok, dan riwayat mutasi.
+- Dokumen penerimaan dan pengeluaran multi-item dengan proses posting atomik.
+- Stock opname dengan validasi seluruh item sebelum finalisasi.
+- Peringatan stok menipis dan laporan mutasi yang dapat diekspor ke CSV.
+- Backup dan restore database dengan pemeriksaan checksum.
+- Build Android melalui NativePHP Mobile.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Teknologi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3 dan Laravel 13
+- Livewire 4
+- NativePHP Mobile 3
+- NativePHP Camera dan mobile barcode scanner
+- SQLite
+- Tailwind CSS 4 dan Vite 8
+- PHPUnit 12
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Menjalankan Secara Lokal
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/shuriza/gudang-scan.git
+cd gudang-scan
+composer run setup
+composer run dev
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Perintah `composer run setup` memasang dependensi, membuat `.env`, menghasilkan application key, menjalankan migrasi, memasang dependensi frontend, dan membangun aset.
 
-## Contributing
+## Menjalankan Pengujian
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer test
+vendor/bin/pint --test
+npm run build
+```
 
-## Code of Conduct
+Test suite mencakup alur dashboard, pemindaian produk, mutasi stok, dokumen inventaris, lokasi, stock opname, peringatan stok, filter riwayat, backup, dan restore.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Build Android
 
-## Security Vulnerabilities
+Build debug:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan native:run android --build=debug --no-interaction --no-tty
+```
 
-## License
+Build release:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan native:run android --build=release --no-interaction --no-tty
+```
+
+Signing key tidak boleh disimpan di repository. Naikkan `NATIVEPHP_APP_VERSION` dan `NATIVEPHP_APP_VERSION_CODE` sebelum membuat rilis.
+
+## Operasional
+
+Panduan singkat untuk operator dan developer tersedia di [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
