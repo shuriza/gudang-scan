@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "shuriza/gudang-scan",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Barcode-based inventory management application for web and Android.",
+    "keywords": ["inventory", "barcode", "laravel", "livewire", "nativephp", "android"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
